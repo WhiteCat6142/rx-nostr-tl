@@ -3,7 +3,8 @@ import './App.css'
 import { createEffect, createSignal, For } from "solid-js";
 import { createStore} from "solid-js/store";
 
-import { createRxNostr, createRxForwardReq } from "rx-nostr";
+import { createRxNostr, createRxForwardReq, createRxBackwardReq } from "rx-nostr";
+import { reduce } from 'rxjs';
 import { themeChange } from 'theme-change'
 
 
@@ -83,12 +84,24 @@ const App = () => {
 const rxNostr = createRxNostr();
 rxNostr.setDefaultRelays(["wss://yabu.me"]);
 
+const rxReq0 = createRxBackwardReq();
+
+rxNostr.use(rxReq0).pipe(reduce((list, packet) => {
+  list.push(packet.message[2]);
+  return list;
+}, [])).subscribe(list=>{
+  setComments([...comments,...list]);
+});
+
+rxReq0.emit({ kinds: [1] , limit:100});
+rxReq0.over();
+
 const rxReq = createRxForwardReq();
 
 rxNostr.use(rxReq).subscribe((packet) => {
   setComments([packet.message[2],...comments]);
 });
 
-rxReq.emit({ kinds: [1] , limit:100});
+rxReq.emit({ kinds: [1] , limit:0});
 
 export default App
