@@ -22,8 +22,9 @@ const App = () => {
 
   const addComment = (e) => {
     e.preventDefault();
-    setComments(comments.length, {
-      title: newTitle()
+    rxNostr.send({
+      kind: 1,
+      content: newTitle(),
     });
     setTitle("");
   };
@@ -49,16 +50,23 @@ const App = () => {
       <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
       <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
       <For each={comments}>
-        {(todo, i) => (
+        {(comment, i) => (
           <div
             class="text-lg"
           >
-            {todo.title}
+            {comment.content}
             <button
               class="btn btn-sm"
-              onClick={() => setComments([...comments.slice(0, i()), ...comments.slice(i() + 1)])}
+              onClick={() => {
+                rxNostr.send({
+                  kind: 7,
+                  content: "🤙",
+                  tags:[["e",comment.id],["p",comment.pubkey]]
+                });
+              }
+              }
             >
-              x
+              &#x1f919;
             </button>
           </div>
         )}
@@ -73,9 +81,9 @@ rxNostr.setDefaultRelays(["wss://yabu.me"]);
 const rxReq = createRxForwardReq();
 
 rxNostr.use(rxReq).subscribe((packet) => {
-  setComments([{title:JSON.stringify(packet.message[2].content)},...comments]);
+  setComments([packet.message[2],...comments]);
 });
 
-rxReq.emit({ kinds: [1] });
+rxReq.emit({ kinds: [1] , limit:100});
 
 export default App
