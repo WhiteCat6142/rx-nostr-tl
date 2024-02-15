@@ -52,11 +52,14 @@ const App = () => {
       <For each={comments}>
         {(comment, i) => (
           <div
-            class="text-lg"
+            class="chat chat-start text-lg"
           >
-            {comment.content}
+            <div class="chat-bubble">
+              {comment.content}
+            </div>
+            <div class="chat-footer">
             <button
-              class="btn btn-sm"
+              class="btn btn-sm "
               onClick={() => {
                 rxNostr.send({
                   kind: 7,
@@ -68,6 +71,8 @@ const App = () => {
             >
               &#x1f919;
             </button>
+            {new Date(comment.created_at*1000).toLocaleTimeString('en-UK')}
+            </div>
           </div>
         )}
       </For>
