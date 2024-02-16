@@ -51,16 +51,16 @@ const App = () => {
       <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
       <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
       <For each={comments}>
-        {(comment, i) => (
+        {(comment, _i) => (
           <div
-            class="chat chat-start text-lg"
+            class="chat chat-start md:text-lg"
           >
-            <div class="chat-bubble">
+            <div class="chat-bubble whitespace-pre-wrap break-all">
               {comment.content}
             </div>
             <div class="chat-footer">
             <button
-              class="btn btn-sm "
+              class="btn btn-sm"
               onClick={() => {
                 rxNostr.send({
                   kind: 7,
