@@ -1,6 +1,6 @@
 import './App.css'
 
-import { createEffect, createSignal, For } from "solid-js";
+import { createEffect, createSignal, For, Show,onCleanup } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import { createRxNostr, createRxForwardReq, createRxBackwardReq } from "rx-nostr";
@@ -19,11 +19,21 @@ const [newTitle, setTitle] = createSignal("");
 
 const [comments, setComments] = createLocalStore([]);
 
+
+const createRouteHandler = () => {
+  const [location, setLocation] = createSignal(window.location.hash);
+  window.addEventListener("hashchange", () => setLocation(window.location.hash));
+  onCleanup(() => window.removeEventListener("hashchange", locationHandler));
+  return location;
+}
+
+const location=createRouteHandler();
+
 const Comm = (props) => {
-  const comments = props.c;
   return (
-    <For each={comments}>
-      {(comment, _i) => (
+    <For each={comments.filter(comment=>{return (!location()||((comment.content.includes(window.location.hash))))})}>
+      {(comment, _i) => {
+        return (
         <div class="chat chat-start md:text-lg">
           <div class="chat-bubble whitespace-pre-wrap break-all">
             {comment.content}
@@ -45,18 +55,27 @@ const Comm = (props) => {
             {new Date(comment.created_at * 1000).toLocaleTimeString('en-UK')}
           </div>
         </div>
-      )}
+      )}}
     </For>
   );
 };
 
+
 const App = () => {
   const addComment = (e) => {
     e.preventDefault();
-    rxNostr.send({
-      kind: 1,
-      content: newTitle(),
-    });
+    const loc=location();
+    if (!loc) {
+      rxNostr.send({
+        kind: 1,
+        content: newTitle(),
+      });
+    } else {
+      rxNostr.send({
+        kind: 1,
+        content: newTitle() + " " + loc,
+      });
+    }
     setTitle("");
   };
 
@@ -80,7 +99,7 @@ const App = () => {
       <button class="btn" data-set-theme="" data-act-class="ACTIVECLASS">Reset</button>
       <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
       <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
-      <Comm c={comments}></Comm>
+      <Comm />
     </>
   );
 };
