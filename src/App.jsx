@@ -94,6 +94,7 @@ const Comm = (props) => {
 };
 
 
+
 const App = () => {
   const addComment = (e) => {
     e.preventDefault();
@@ -118,22 +119,46 @@ const App = () => {
 
   return (
     <>
-      <div>
-        <h3>Simple Comments Example</h3>
-        <form onSubmit={addComment}>
+      <div class="drawer">
+      <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+      <div class="fixed z-10 navbar bg-base-100 grid grid-cols1">
+        <div class="flex">
+  <div class="flex-none">
+  <label for="my-drawer" class="btn btn-square btn-ghost drawer-button">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </label>
+      </div>
+        <div class="flex-1">Simple Comments Example</div>
+        </div>
+        <div >
+        <form onSubmit={addComment} class="flex">
           <input
             placeholder="enter a comment"
             required
             value={newTitle()}
-            class="input input-bordered w-full max-w-xs"
+            class="input input-bordered grow"
             onInput={(e) => setTitle(e.currentTarget.value)}
           />
-          <button class="btn">+</button>
+          <button class="btn flex-none">+</button>
         </form>
-        <button class="btn" data-set-theme="" data-act-class="ACTIVECLASS">Reset</button>
-        <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
-        <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
+        </div>
+        </div>
+
+        <div class="drawer-content">
+        <br /><br /><br /><br /><br />
         <Comm />
+        </div>
+
+  <div class="drawer-side z-20">
+    <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+
+    <div class="menu p-4 w-80 min-h-full bg-base-200">
+    <button class="btn" data-set-theme="" data-act-class="ACTIVECLASS">Reset</button>
+    <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
+    <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
+
+    </div>
+  </div>
       </div>
     </>
   );
