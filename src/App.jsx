@@ -63,7 +63,7 @@ const Commdom = (props) => {
 
 const Comm = (props) => {
   return (
-    <For each={comments.filter(comment => { return (!location() || ((comment.content.includes(window.location.hash)))) })}>
+    <For each={comments.filter(comment => { return (!location() || ((comment.content.includes(decodeURIComponent(window.location.hash))))) })}>
       {(comment, _i) => {
         return (
           <div class="chat chat-start md:text-lg">
