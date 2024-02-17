@@ -1,11 +1,13 @@
 import './App.css'
 
-import { createEffect, createSignal, For, Show,onCleanup } from "solid-js";
+import { createEffect, createSignal, For, Show, onCleanup } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import { createRxNostr, createRxForwardReq, createRxBackwardReq } from "rx-nostr";
 import { reduce } from 'rxjs';
 import { themeChange } from 'theme-change'
+
+import sanitizeHtml from 'sanitize-html'
 
 
 function createLocalStore(initState) {
@@ -27,35 +29,63 @@ const createRouteHandler = () => {
   return location;
 }
 
-const location=createRouteHandler();
+const location = createRouteHandler();
+
+const Commdom = (props) => {
+  let str = sanitizeHtml(props.content.trim());
+  const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
+  const urls = str.match(urlR);
+  const replaced = [];
+  for (const t of props.tags) {
+    if (t[0] === "r" && (t[1].startsWith("http://") || t[1].startsWith("https://"))) {
+      const s = sanitizeHtml(t[1]);
+      replaced.push(s);
+      str = str.replace(s, `<a href=${t[1]}>${s}</a>`);
+    }
+    if (t[0] === "emoji" && (t[2].startsWith("http://") || t[2].startsWith("https://"))) {
+      replaced.push(t[2]);
+      str = str.replace(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
+    }
+  }
+  if (!!urls) {
+    for (const url of urls) {
+      if (replaced.every(t => (!url.startsWith(t)))) {
+        console.log(url);
+        str = str.replace(url, `<a href=${url}>${url}</a>`);
+      }
+    }
+  }
+  return (<div innerHTML={str}></div>);
+};
 
 const Comm = (props) => {
   return (
-    <For each={comments.filter(comment=>{return (!location()||((comment.content.includes(window.location.hash))))})}>
+    <For each={comments.filter(comment => { return (!location() || ((comment.content.includes(window.location.hash)))) })}>
       {(comment, _i) => {
         return (
-        <div class="chat chat-start md:text-lg">
-          <div class="chat-bubble whitespace-pre-wrap break-all">
-            {comment.content}
+          <div class="chat chat-start md:text-lg">
+            <div class="font-body chat-bubble whitespace-pre-wrap break-all">
+              {Commdom(comment)}
+            </div>
+            <div class="chat-footer">
+              <button
+                class="btn btn-sm"
+                onClick={() => {
+                  rxNostr.send({
+                    kind: 7,
+                    content: "🤙",
+                    tags: [["e", comment.id], ["p", comment.pubkey]]
+                  });
+                }
+                }
+              >
+                &#x1f919;
+              </button>
+              {new Date(comment.created_at * 1000).toLocaleTimeString('en-UK')}
+            </div>
           </div>
-          <div class="chat-footer">
-            <button
-              class="btn btn-sm"
-              onClick={() => {
-                rxNostr.send({
-                  kind: 7,
-                  content: "🤙",
-                  tags: [["e", comment.id], ["p", comment.pubkey]]
-                });
-              }
-              }
-            >
-              &#x1f919;
-            </button>
-            {new Date(comment.created_at * 1000).toLocaleTimeString('en-UK')}
-          </div>
-        </div>
-      )}}
+        )
+      }}
     </For>
   );
 };
@@ -64,7 +94,7 @@ const Comm = (props) => {
 const App = () => {
   const addComment = (e) => {
     e.preventDefault();
-    const loc=location();
+    const loc = location();
     if (!loc) {
       rxNostr.send({
         kind: 1,
@@ -85,21 +115,23 @@ const App = () => {
 
   return (
     <>
-      <h3>Simple Comments Example</h3>
-      <form onSubmit={addComment}>
-        <input
-          placeholder="enter a comment"
-          required
-          value={newTitle()}
-          class="input input-bordered w-full max-w-xs"
-          onInput={(e) => setTitle(e.currentTarget.value)}
-        />
-        <button class="btn">+</button>
-      </form>
-      <button class="btn" data-set-theme="" data-act-class="ACTIVECLASS">Reset</button>
-      <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
-      <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
-      <Comm />
+      <div>
+        <h3>Simple Comments Example</h3>
+        <form onSubmit={addComment}>
+          <input
+            placeholder="enter a comment"
+            required
+            value={newTitle()}
+            class="input input-bordered w-full max-w-xs"
+            onInput={(e) => setTitle(e.currentTarget.value)}
+          />
+          <button class="btn">+</button>
+        </form>
+        <button class="btn" data-set-theme="" data-act-class="ACTIVECLASS">Reset</button>
+        <button class="btn" data-set-theme="dark" data-act-class="ACTIVECLASS">Dark</button>
+        <button class="btn" data-set-theme="light" data-act-class="ACTIVECLASS">Light</button>
+        <Comm />
+      </div>
     </>
   );
 };
