@@ -46,6 +46,9 @@ const Commdom = (props) => {
       replaced.push(t[2]);
       str = str.replace(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
     }
+    if (t[0] === "t"){
+      str = str.replace("#"+t[1], `<a href=#${t[1]}>#${t[1]}</a>`);
+    }
   }
   if (!!urls) {
     for (const url of urls) {
