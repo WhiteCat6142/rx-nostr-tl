@@ -36,26 +36,40 @@ const Commdom = (props) => {
     let str = sanitizeHtml(props.comment.content.trim());
     const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
     const urls = str.match(urlR);
+    const tagR = /\#\S+/g;
+    const tags = str.match(tagR);
     const replaced = [];
     for (const t of props.comment.tags) {
       if (t[0] === "r" && (t[1].startsWith("http://") || t[1].startsWith("https://"))) {
         const s = sanitizeHtml(t[1]);
+        if (!replaced.includes(s)) {
         replaced.push(s);
-        str = str.replace(s, `<a href=${t[1]}>${s}</a>`);
+        str = str.replaceAll(s, `<a href=${t[1]}>${s}</a>`);
+        }
       }
       if (t[0] === "emoji" && (t[2].startsWith("http://") || t[2].startsWith("https://"))) {
         replaced.push(t[2]);
-        str = str.replace(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
+        str = str.replaceAll(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
       }
       if (t[0] === "t") {
-        str = str.replace("#" + t[1], `<a href=#${t[1]}>#${t[1]}</a>`);
+        const s="#" + sanitizeHtml(t[1]);
+        if(!replaced.includes(s)){
+        replaced.push(s);
+        str = str.replaceAll(s, `<a href=${s}>${s}</a>`);
+        }
       }
     }
     if (Array.isArray(urls)) {
       for (const url of urls) {
         if (replaced.every(t => (!url.startsWith(t)))) {
-          console.log(url);
-          str = str.replace(url, `<a href=${url}>${url}</a>`);
+          str = str.replaceAll(url, `<a href=${url}>${url}</a>`);
+        }
+      }
+    }
+    if (Array.isArray(tags)) {
+      for (const tag of tags) {
+        if (replaced.every(t => (!tag.startsWith(t)))) {
+          str = str.replaceAll(tag, `<a href=${tag}>${tag}</a>`);
         }
       }
     }
@@ -102,17 +116,30 @@ const App = () => {
   const addComment = (e) => {
     e.preventDefault();
     const loc = location();
-    if (!loc) {
-      rxNostr.send({
-        kind: 1,
-        content: newTitle(),
-      });
-    } else {
-      rxNostr.send({
-        kind: 1,
-        content: newTitle() + " " + loc,
-      });
+    let str = newTitle();
+
+    let ts = [];
+    const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
+    const urls = str.match(urlR);
+    const tagR = /\#\S+/g;
+    const tags = str.match(tagR);
+    if (Array.isArray(urls)) {
+      const list = urls.map(url=>{return ["r",url]});
+      ts=[...ts,...list];
     }
+    if (Array.isArray(tags)) {
+      const list = tags.map(tag=>{return ["t",tag.substring(1)]});
+      ts=[...ts,...list];
+    }
+    if (loc!=="") {
+      ts.push(["t",loc.substring(1)]);
+      str=str+" "+loc;
+    }
+    rxNostr.send({
+      kind: 1,
+      content: str,
+      tags:ts
+    });
     setTitle("");
   };
 
