@@ -24,7 +24,7 @@
     "eslint": "^8.*",
     "eslint-plugin-solid": "^0.13.*",
     "husky": "^9.*",
-    "lint-staged": "^15.2.0",
+    "lint-staged": "^15.0.0",
     "postcss": "^8.*",
     "postcss-load-config": "^4.*",
     "tailwindcss": "^3.*",

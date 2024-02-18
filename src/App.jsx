@@ -80,8 +80,13 @@ const Commdom = (props) => {
 };
 
 const Comm = (_props) => {
+  const list=createMemo(()=>{
+    const loc = decodeURIComponent(location());
+    if(loc==="")return comments;
+    return comments.filter(comment => { return (((comment.content.includes(loc)))) })
+  });
   return (
-    <For each={comments.filter(comment => { return (!location() || ((comment.content.includes(decodeURIComponent(window.location.hash))))) })}>
+    <For each={list()}>
       {(comment, _i) => {
         return (
           <div class="chat chat-start md:text-lg">
