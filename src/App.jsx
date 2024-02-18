@@ -36,7 +36,7 @@ const Commdom = (props) => {
     let str = sanitizeHtml(props.comment.content.trim());
     const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
     const urls = str.match(urlR);
-    const tagR = /\#\S+/g;
+    const tagR = /#\S+/g;
     const tags = str.match(tagR);
     const replaced = [];
     for (const t of props.comment.tags) {
@@ -75,7 +75,8 @@ const Commdom = (props) => {
     }
     return str;
   });
-  return (<div innerHTML={s()}></div>);
+  /* eslint-disable-next-line solid/no-innerhtml*/
+  return (<div innerHTML={s()} />);
 };
 
 const Comm = (_props) => {
@@ -121,7 +122,7 @@ const App = () => {
     let ts = [];
     const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
     const urls = str.match(urlR);
-    const tagR = /\#\S+/g;
+    const tagR = /#\S+/g;
     const tags = str.match(tagR);
     if (Array.isArray(urls)) {
       const list = urls.map(url=>{return ["r",url]});

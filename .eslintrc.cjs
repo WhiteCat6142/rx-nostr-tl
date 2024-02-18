@@ -13,13 +13,6 @@ module.exports = {
       'warn',
       { vars: 'local', "argsIgnorePattern":"^_", "varsIgnorePattern": "^_" }
     ],
-    'solid/no-innerhtml': [
-      'warn',
-      { 
-      // if the innerHTML value is guaranteed to be a static HTML string (i.e. no user input), allow it
-      allowStatic: true, 
-      }
-    ]
   },
   "reportUnusedDisableDirectives": true
 }

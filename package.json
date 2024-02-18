@@ -7,8 +7,7 @@
     "build": "vite build",
     "lint": "eslint . --ext js,jsx",
     "preview": "vite preview",
-    "prepare": "husky install",
-    "pre-commit": "npx lint-staged"
+    "prepare": "husky"
   },
   "dependencies": {
     "babel-preset-solid": "^1.8.*",
@@ -25,7 +24,7 @@
     "eslint": "^8.*",
     "eslint-plugin-solid": "^0.13.*",
     "husky": "^9.*",
-    "lint-staged": "^15.*",
+    "lint-staged": "^14.*",
     "postcss": "^8.*",
     "postcss-load-config": "^4.*",
     "tailwindcss": "^3.*",
