@@ -1,6 +1,6 @@
 import './App.css'
 
-import { createEffect, createSignal, createMemo, For, onCleanup, onMount } from "solid-js";
+import { createSignal, createMemo, For, onCleanup, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import { createRxNostr, createRxForwardReq, createRxBackwardReq } from "rx-nostr";
@@ -32,54 +32,6 @@ const createRouteHandler = () => {
 
 const location = createRouteHandler();
 
-const Commdom = (props) => {
-  const s = createMemo(() => {
-    const comment=eventCache.get(props.comment);
-    let str = sanitizeHtml(comment.content.trim());
-    const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
-    const urls = str.match(urlR);
-    const tagR = /#\S+/g;
-    const tags = str.match(tagR);
-    const replaced = [];
-    for (const t of comment.tags) {
-      if (t[0] === "r" && (t[1].startsWith("http://") || t[1].startsWith("https://"))) {
-        const s = sanitizeHtml(t[1]);
-        if (!replaced.includes(s)) {
-        replaced.push(s);
-        str = str.replaceAll(s, `<a href=${t[1]}>${s}</a>`);
-        }
-      }
-      if (t[0] === "emoji" && (t[2].startsWith("http://") || t[2].startsWith("https://"))) {
-        replaced.push(t[2]);
-        str = str.replaceAll(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
-      }
-      if (t[0] === "t") {
-        const s="#" + sanitizeHtml(t[1]);
-        if(!replaced.includes(s)){
-        replaced.push(s);
-        str = str.replaceAll(s, `<a href=${s}>${s}</a>`);
-        }
-      }
-    }
-    if (Array.isArray(urls)) {
-      for (const url of urls) {
-        if (replaced.every(t => (!url.startsWith(t)))) {
-          str = str.replaceAll(url, `<a href=${url}>${url}</a>`);
-        }
-      }
-    }
-    if (Array.isArray(tags)) {
-      for (const tag of tags) {
-        if (replaced.every(t => (!tag.startsWith(t)))) {
-          str = str.replaceAll(tag, `<a href=${tag}>${tag}</a>`);
-        }
-      }
-    }
-    return str;
-  });
-  /* eslint-disable-next-line solid/no-innerhtml*/
-  return (<div innerHTML={s()} />);
-};
 
 const Comm = (_props) => {
   const list=createMemo(()=>{
@@ -90,27 +42,29 @@ const Comm = (_props) => {
   return (
     <For each={list()}>
       {(comment, _i) => {
+        const c=createMemo(()=>{return eventCache.get(comment)});
+        
         return (
           <div class="chat chat-start md:text-lg">
             <div class="font-body chat-bubble whitespace-pre-wrap break-all">
-              <Commdom comment={comment} />
+              {//eslint-disable-next-line solid/no-innerhtml
+              }<div innerHTML={c().body} />
             </div>
             <div class="chat-footer">
               <button
                 class="btn btn-sm"
                 onClick={() => {
-                  const c=eventCache.get(comment);
                   rxNostr.send({
                     kind: 7,
                     content: "🤙",
-                    tags: [["e", c.id], ["p", c.pubkey]]
+                    tags: [["e", c().id], ["p", c().pubkey]]
                   });
                 }
                 }
               >
                 &#x1f919;
               </button>
-              {new Date(eventCache.get(comment).created_at * 1000).toLocaleTimeString('en-UK')}
+              {c().date}
             </div>
           </div>
         )
@@ -213,8 +167,51 @@ rxNostr.setDefaultRelays([{
 
 const rxReq0 = createRxBackwardReq();
 
+const toHTML = comment => {
+  let str = sanitizeHtml(comment.content.trim());
+  const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
+  const urls = str.match(urlR);
+  const tagR = /#\S+/g;
+  const tags = str.match(tagR);
+  const replaced = [];
+  for (const t of comment.tags) {
+    if (t[0] === "r" && (t[1].startsWith("http://") || t[1].startsWith("https://"))) {
+      const s = sanitizeHtml(t[1]);
+      if (!replaced.includes(s)) {
+      replaced.push(s);
+      str = str.replaceAll(s, `<a href=${t[1]}>${s}</a>`);
+      }
+    }
+    if (t[0] === "emoji" && (t[2].startsWith("http://") || t[2].startsWith("https://"))) {
+      replaced.push(t[2]);
+      str = str.replaceAll(`:${t[1]}:`, `<img src=${t[2]} class="m-0 p-0 border-none max-h-6" />`);
+    }
+    if (t[0] === "t") {
+      const s="#" + sanitizeHtml(t[1]);
+      if(!replaced.includes(s)){
+      replaced.push(s);
+      str = str.replaceAll(s, `<a href=${s}>${s}</a>`);
+      }
+    }
+  }
+  if (Array.isArray(urls)) {
+    for (const url of urls) {
+      if (replaced.every(t => (!url.startsWith(t)))) {
+        str = str.replaceAll(url, `<a href=${url}>${url}</a>`);
+      }
+    }
+  }
+  if (Array.isArray(tags)) {
+    for (const tag of tags) {
+      if (replaced.every(t => (!tag.startsWith(t)))) {
+        str = str.replaceAll(tag, `<a href=${tag}>${tag}</a>`);
+      }
+    }
+  }
+  return str;
+};
 const processEvent = event=>{
-  eventCache.set(event.id,event);
+  eventCache.set(event.id,{...event,body:toHTML(event),date:new Date(event.created_at * 1000).toLocaleTimeString('en-UK')});
   return event.id;
 };
 
