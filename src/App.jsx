@@ -42,13 +42,13 @@ const Comm = (_props) => {
   return (
     <For each={list()}>
       {(comment, _i) => {
-        const c=createMemo(()=>{return eventCache.get(comment)});
+        const c=eventCache.get(comment);
         
         return (
           <div class="chat chat-start md:text-lg">
             <div class="font-body chat-bubble whitespace-pre-wrap break-all">
               {//eslint-disable-next-line solid/no-innerhtml
-              }<div innerHTML={c().body} />
+              }<div innerHTML={c.body} />
             </div>
             <div class="chat-footer">
               <button
@@ -57,14 +57,14 @@ const Comm = (_props) => {
                   rxNostr.send({
                     kind: 7,
                     content: "🤙",
-                    tags: [["e", c().id], ["p", c().pubkey]]
+                    tags: [["e", c.id], ["p", c.pubkey]]
                   });
                 }
                 }
               >
                 &#x1f919;
               </button>
-              {c().date}
+              {c.date}
             </div>
           </div>
         )
