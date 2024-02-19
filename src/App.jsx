@@ -1,6 +1,6 @@
 import './App.css'
 
-import { createEffect, createSignal, createMemo, For, onCleanup } from "solid-js";
+import { createEffect, createSignal, createMemo, For, onCleanup, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import { createRxNostr, createRxForwardReq, createRxBackwardReq } from "rx-nostr";
@@ -9,6 +9,7 @@ import { themeChange } from 'theme-change'
 
 import sanitizeHtml from 'sanitize-html'
 
+const eventCache = new Map();
 
 function createLocalStore(initState) {
   const [state, setState] = createStore(initState);
@@ -33,13 +34,14 @@ const location = createRouteHandler();
 
 const Commdom = (props) => {
   const s = createMemo(() => {
-    let str = sanitizeHtml(props.comment.content.trim());
+    const comment=eventCache.get(props.comment);
+    let str = sanitizeHtml(comment.content.trim());
     const urlR = /https:?\/\/[0-9.\-A-Za-z]+\/\S*/g;
     const urls = str.match(urlR);
     const tagR = /#\S+/g;
     const tags = str.match(tagR);
     const replaced = [];
-    for (const t of props.comment.tags) {
+    for (const t of comment.tags) {
       if (t[0] === "r" && (t[1].startsWith("http://") || t[1].startsWith("https://"))) {
         const s = sanitizeHtml(t[1]);
         if (!replaced.includes(s)) {
@@ -83,7 +85,7 @@ const Comm = (_props) => {
   const list=createMemo(()=>{
     const loc = decodeURIComponent(location());
     if(loc==="")return comments;
-    return comments.filter(comment => { return (((comment.content.includes(loc)))) })
+    return comments.filter(comment => { return (((eventCache.get(comment).content.includes(loc)))) })
   });
   return (
     <For each={list()}>
@@ -97,17 +99,18 @@ const Comm = (_props) => {
               <button
                 class="btn btn-sm"
                 onClick={() => {
+                  const c=eventCache.get(comment);
                   rxNostr.send({
                     kind: 7,
                     content: "🤙",
-                    tags: [["e", comment.id], ["p", comment.pubkey]]
+                    tags: [["e", c.id], ["p", c.pubkey]]
                   });
                 }
                 }
               >
                 &#x1f919;
               </button>
-              {new Date(comment.created_at * 1000).toLocaleTimeString('en-UK')}
+              {new Date(eventCache.get(comment).created_at * 1000).toLocaleTimeString('en-UK')}
             </div>
           </div>
         )
@@ -149,7 +152,7 @@ const App = () => {
     setTitle("");
   };
 
-  createEffect(() => {
+  onMount(() => {
     themeChange(false)
   })
 
@@ -210,8 +213,13 @@ rxNostr.setDefaultRelays([{
 
 const rxReq0 = createRxBackwardReq();
 
+const processEvent = event=>{
+  eventCache.set(event.id,event);
+  return event.id;
+};
+
 rxNostr.use(rxReq0).pipe(reduce((list, packet) => {
-  list.push(packet.message[2]);
+  list.push(processEvent(packet.message[2]));
   return list;
 }, [])).subscribe(list => {
   setComments([...comments, ...list]);
@@ -223,7 +231,7 @@ rxReq0.over();
 const rxReq = createRxForwardReq();
 
 rxNostr.use(rxReq).subscribe((packet) => {
-  setComments([packet.message[2], ...comments]);
+  setComments([processEvent(packet.message[2]), ...comments]);
 });
 
 rxReq.emit({ kinds: [1], limit: 0 });
